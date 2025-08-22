@@ -118,7 +118,7 @@ services:
       - LOAD_EX=n
       - EXECUTOR=Sequential
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-      - AIRFLOW_WEBSERVER_SECRET_KEY=this_is_a_very_secured_key
+      - AIRFLOW__WEBSERVER__SECRET_KEY=this_is_a_very_secured_key
     logging:
       options:
         max-size: 10m
@@ -127,6 +127,7 @@ services:
       - ./dags:/opt/airflow/dags
       - ./script/entrypoint.sh:/opt/airflow/script/entrypoint.sh
       - ./requirements.txt:/opt/airflow/requirements.txt
+      - ./:/opt/app:ro
     ports:
       - "8080:8080"
     healthcheck:
@@ -145,11 +146,12 @@ services:
       - ./dags:/opt/airflow/dags
       - ./script/entrypoint.sh:/opt/airflow/script/entrypoint.sh
       - ./requirements.txt:/opt/airflow/requirements.txt
+      - ./:/opt/app:ro
     environment:
       - LOAD_EX=n
       - EXECUTOR=Sequential
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-      - AIRFLOW_WEBSERVER_SECRET_KEY=this_is_a_very_secured_key
+      - AIRFLOW__WEBSERVER__SECRET_KEY=this_is_a_very_secured_key
     command: bash -c "pip install -r ./requirements.txt && airflow db upgrade && airflow scheduler"
     networks:
       - confluent
@@ -187,13 +189,7 @@ services:
       - "7077:7077"
     networks:
       - confluent
-    environment:
-      - GOOGLE_APPLICATION_CREDENTIALS=/opt/spark/sa.json
-      - BQ_TABLE=leafy-mender-467715-s9.meteo_pazi.weather_readings
-      - BQ_TEMP_BUCKET=meteo_pazi
-      - CHECKPOINT_DIR=gs://meteo_pazi/checkpoints/weather
     volumes:
-      - ./config/credential.json:/opt/spark/sa.json:ro
       - ./:/opt/app:ro
   spark-worker:
     image: bitnami/spark:latest
@@ -208,20 +204,63 @@ services:
     networks:
       - confluent
     volumes:
-      - ./config/credential.json:/opt/spark/sa.json:ro
       - ./:/opt/app:ro
 
-  cassandra_db:
-    image: cassandra:latest
-    container_name: cassandra
-    hostname: cassandra
+  superset-init:
+    image: apache/superset:latest
+    container_name: superset_init
+    command: ["/app/docker/docker-init.sh"]
+    env_file:
+      - path: docker/.env # default
+        required: true
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+    user: "root"
+    volumes: 
+      - ./docker/superset_config.py:/app/docker/superset_config.py:ro
+      - ./docker/docker-init.sh:/app/docker/docker-init.sh:ro
+    healthcheck:
+      disable: true
+    networks:
+      - confluent
+  superset:
+    image: apache/superset:latest
+    container_name: superset_app
+    command:
+    - bash
+    - -c
+    - >
+      pip install psycopg2-binary &&
+      /app/docker/docker-bootstrap.sh app
+    user: "root"
+    restart: unless-stopped
     ports:
-      - "9042:9042"
-    environment:
-      - MAX_HEAP_SIZE=512M
-      - HEAP_NEWSIZE=100M
-      - CASSANDRA_USERNAME=cassandra
-      - CASSANDRA_PASSWORD=cassandra
+      - 8088:8088
+    env_file:
+      - path: docker/.env
+        required: true
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./docker/superset_config.py:/app/docker/superset_config.py:ro
+      - ./docker/docker-bootstrap.sh:/app/docker/docker-bootstrap.sh:ro
+      - ./docker/requirements-local.txt:/app/docker/requirements-local.txt:ro
+      - superset_home:/app/superset_home
+    networks:
+      - confluent
+
+  redis:
+    image: redis:7
+    container_name: superset_cache
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis:/data
     networks:
       - confluent
 
@@ -232,6 +271,10 @@ volumes:
     driver: local
   zookeeper_logs:
     driver: local
+  redis:
+    external: false
+  superset_home:
+    external: false
 
 networks:
   confluent:

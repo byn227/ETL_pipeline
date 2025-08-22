@@ -2,3 +2,4 @@ venv/
 config/
 artifacts/
 postgres/
+dags/__pycache__
