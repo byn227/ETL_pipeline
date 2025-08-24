@@ -136,3 +136,25 @@ try:
     )
 except ImportError:
     logger.info("Using default Docker config...")
+
+# --------------------------------------------------------------------
+# Cookie/session settings (explicit override via env)
+# Ensure these are applied even if defaults elsewhere are Lax/True.
+# --------------------------------------------------------------------
+def _get_bool_env(name: str, default: bool) -> bool:
+    val = os.getenv(name)
+    if val is None:
+        return default
+    return val.lower() in {"1", "true", "yes", "on"}
+
+# Map env -> Flask cookie flags
+SESSION_COOKIE_SAMESITE = os.getenv("SUPERSET_SESSION_COOKIE_SAMESITE", "Lax")
+SESSION_COOKIE_SECURE = _get_bool_env("SUPERSET_SESSION_COOKIE_SECURE", False)
+SESSION_COOKIE_HTTPONLY = _get_bool_env("SUPERSET_SESSION_COOKIE_HTTPONLY", True)
+
+# Permanent session lifetime (seconds)
+try:
+    _lifetime = int(os.getenv("SUPERSET_PERMANENT_SESSION_LIFETIME", "86400"))
+except Exception:
+    _lifetime = 86400
+PERMANENT_SESSION_LIFETIME = _lifetime

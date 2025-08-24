@@ -3,7 +3,7 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 default_args = {
     'owner': 'byn227',
-    'start_date': datetime(2025, 8, 23, 0, 0, 0)
+    'start_date': datetime(2025, 8, 24, 0, 0, 0)
 }
 with DAG(
     dag_id="spark_stream_dag",
