@@ -11,50 +11,52 @@ PG_DB = "airflow"
 PG_USER = "airflow"
 PG_PASSWORD = "airflow"
 
-TABLE_SUFFIX = datetime.now().strftime('%Y%m%d')
-HOURLY_TABLE = f"meteo_hourly_{TABLE_SUFFIX}"
-DAILY_TABLE = f"meteo_daily_{TABLE_SUFFIX}"
+# Fixed table names as requested
+HOURLY_TABLE = "meteo_hourly"
+DAILY_TABLE = "meteo_daily"
 
 def ensure_pg_tables():
     ddl_hourly = f"""
     CREATE TABLE IF NOT EXISTS {HOURLY_TABLE} (
-        id text PRIMARY KEY,
-        time_text text,
-        time_ts timestamp,
-        latitude double precision,
-        longitude double precision,
-        timezone text,
-        timezone_abbreviation text,
-        temperature_2m double precision,
-        relative_humidity_2m double precision,
-        apparent_temperature double precision,
-        precipitation double precision,
-        surface_pressure double precision,
-        cloud_cover double precision,
-        wind_speed_10m double precision
-    );
+                id text,
+                time_text text,
+                time_ts timestamp NOT NULL,
+                latitude double precision,
+                longitude double precision,
+                timezone text,
+                timezone_abbreviation text,
+                temperature_2m double precision,
+                relative_humidity_2m double precision,
+                apparent_temperature double precision,
+                precipitation double precision,
+                surface_pressure double precision,
+                cloud_cover double precision,
+                wind_speed_10m double precision,
+                day text,
+                UNIQUE (id, time_ts)
+            );
     """
     ddl_daily = f"""
     CREATE TABLE IF NOT EXISTS {DAILY_TABLE} (
-        id text PRIMARY KEY,
-        date_text text,
-        date_ts date,
-        latitude double precision,
-        longitude double precision,
-        timezone text,
-        timezone_abbreviation text,
-        sunrise_time text,
-        sunset_time text,
-        sunshine_duration double precision,
-        sunshine_duration_time text
-    );
+                id text,
+                date_text text,
+                date_ts date NOT NULL,
+                latitude double precision,
+                longitude double precision,
+                timezone text,
+                timezone_abbreviation text,
+                sunrise_time text,
+                sunset_time text,
+                sunshine_duration double precision,
+                sunshine_duration_time text,
+                UNIQUE (id, date_ts)
+            );
     """
     try:
         with psycopg2.connect(host=PG_HOST, port=PG_PORT, dbname=PG_DB, user=PG_USER, password=PG_PASSWORD) as conn:
             with conn.cursor() as cur:
                 cur.execute(ddl_hourly)
                 cur.execute(ddl_daily)
-                conn.commit()
         logging.info(f"PostgreSQL tables ensured: {HOURLY_TABLE}, {DAILY_TABLE}")
     except Exception as e:
         logging.error(f"Failed to ensure PostgreSQL tables: {e}")
@@ -73,13 +75,13 @@ def insert_hourly_data(**kwargs):
                     INSERT INTO {HOURLY_TABLE} (
                         id, time_text, time_ts, latitude, longitude, timezone, timezone_abbreviation,
                         temperature_2m, relative_humidity_2m, apparent_temperature,
-                        precipitation, surface_pressure, cloud_cover, wind_speed_10m
+                        precipitation, surface_pressure, cloud_cover, wind_speed_10m, day
                     ) VALUES (
                         %(id)s, %(time_text)s, %(time_ts)s, %(latitude)s, %(longitude)s, %(timezone)s, %(timezone_abbreviation)s,
                         %(temperature_2m)s, %(relative_humidity_2m)s, %(apparent_temperature)s,
-                        %(precipitation)s, %(surface_pressure)s, %(cloud_cover)s, %(wind_speed_10m)s
+                        %(precipitation)s, %(surface_pressure)s, %(cloud_cover)s, %(wind_speed_10m)s, %(day)s
                     )
-                    ON CONFLICT (id) DO NOTHING
+                    ON CONFLICT (id, time_ts) DO NOTHING
                     """,
                     kwargs,
                 )
@@ -105,7 +107,7 @@ def insert_daily_data(**kwargs):
                         %(id)s, %(date_text)s, %(date_ts)s, %(latitude)s, %(longitude)s, %(timezone)s, %(timezone_abbreviation)s,
                         %(sunrise_time)s, %(sunset_time)s, %(sunshine_duration)s, %(sunshine_duration_time)s
                     )
-                    ON CONFLICT (id) DO NOTHING
+                    ON CONFLICT (id, date_ts) DO NOTHING
                     """,
                     kwargs,
                 )
@@ -195,11 +197,11 @@ def create_selection_df_from_kafka_hourly(spark_df):
         col("timezone").alias("timezone"),
         col("timezone_abbreviation").alias("timezone_abbreviation"),
         col("temperature_2m").cast("double").alias("temperature_2m"),
-        col("relative_humidity_2m").cast("double").alias("relative_humidity_2m"),
+        (col("relative_humidity_2m").cast("double")/lit(100.0)).alias("relative_humidity_2m"),
         col("apparent_temperature").cast("double").alias("apparent_temperature"),
         col("precipitation").cast("double").alias("precipitation"),
         col("surface_pressure").cast("double").alias("surface_pressure"),
-        col("cloud_cover").cast("double").alias("cloud_cover"),
+        (col("cloud_cover").cast("double")/lit(100.0)).alias("cloud_cover"),
         col("wind_speed_10m").cast("double").alias("wind_speed_10m")
     )
 
@@ -215,7 +217,8 @@ def create_selection_df_from_kafka_hourly(spark_df):
 
     selection_df = selection_df \
         .withColumn("time_ts", ts) \
-        .withColumn("time_text", time_text)
+        .withColumn("time_text", time_text) \
+        .withColumn("day", date_format(ts, "dd/MM/yyyy"))
 
     print(selection_df)
     return selection_df
