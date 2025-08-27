@@ -8,7 +8,7 @@ default_args = {
 with DAG(
     dag_id="spark_stream_dag",
     default_args=default_args,
-    schedule="@hourly",
+    schedule="@daily",
     catchup=False
 ) as dag:
     start_stream = BashOperator(

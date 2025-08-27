@@ -1,108 +1,60 @@
-# Pipeline ETL : Kafka → Spark Structured Streaming → Postgres → Superset
+# Pipeline ETL Météo Paris
 
-Flux Open‑Meteo vers Kafka, traitement avec Spark, stockage dans Postgres (tables suffixées par jour) et visualisation avec Superset. Orchestration via Airflow.
+Flux Open‑Meteo vers Kafka, traitement avec Spark Structured Streaming, chargement dans BigQuery et visualisation via Looker Studio/BigQuery. Orchestration par Airflow.
+
+Vous pouvez changer la ville selon la latitude et la longitude dans l’API
 
 ## Architecture
-* __Kafka__ : Zookeeper, Broker, Schema Registry, Control Center
-* __Airflow__ : exécute deux DAGs
-  * `weather_daily` — récupère Open‑Meteo et publie dans Kafka
-  * `spark_stream_dag` — lance le consommateur de streaming Spark
-* __Spark__ (master/worker) pour le dev ; le job de streaming tourne comme un processus Python déclenché par Airflow
-* __Postgres__ pour le stockage
-* __Superset__ pour les tableaux de bord
+![System Architecture](assets/system.png)
 
-## Services et ports
-* __Airflow Web__ : http://localhost:8080
-* __Kafka Broker__ : localhost:9092 (externe), broker:29092 (interne aux conteneurs)
-* __Schema Registry__ : http://localhost:8081
-* __Control Center__ : http://localhost:9021
-* __Postgres__ : localhost:5432 (user : airflow, pass : airflow, db : airflow)
-* __Superset__ : http://localhost:8088
+## Topics Kafka
+* __Horaire__: `weather_paris`
+* __Quotidien__: `daily_paris`
 
-Voir `docker-compose.yml` pour la configuration complète.
-
-## Sujets Kafka
-* __Horaire__ : `weather_paris`
-* __Quotidien__ : `daily_paris`
-
-Produits par `dags/kafka_stream.py` via l’API Open‑Meteo.
-
+Produits par `dags/kafka_stream.py` (appel API Open‑Meteo, normalisation et envoi vers Kafka).
 ## Consommateur Spark Streaming
-* __Entrée__ : `spark_stream.py`
-* __Déclenché par__ : `dags/spark_stream_dag.py` (planification : `@hourly`)
-* __Bootstrap Kafka__ :
-  * Dans les conteneurs : `broker:29092`
-  * Depuis l’hôte : `localhost:9092`
-* __Checkpoints__ :
-  * Horaire : `/tmp/checkpoints/weather_hourly`
-  * Quotidien : `/tmp/checkpoints/weather_daily`
+* __Entrée__: `spark_stream.py`
+* __Déclenché par__: `dags/spark_stream_dag.py` (planification: `@daily`)
+* __Bootstrap Kafka__:
+  * Dans les conteneurs: `broker:29092`
+  * Depuis l’hôte: `localhost:9092`
+* __Checkpoints__ (exemple d’exécution): `/tmp/checkpoints/hourly_<run_tag>`, `/tmp/checkpoints/daily_<run_tag>`
 
-## Tables Postgres (suffixées par jour)
-Les tables sont créées avec un suffixe de date courante au démarrage du processus :
-* __Horaire__ : `meteo_hourly_YYYYMMDD`
-* __Quotidien__ : `meteo_daily_YYYYMMDD`
+## BigQuery
+* __Project ID__: `leafy-mender-467715-s9` (modifiable dans `spark_stream.py`)
+* __Dataset__: `meteo_pazi`
+* __Tables__ (sans suffixe de date):
+  * Horaire: `meteo_hourly`
+  * Quotidien: `meteo_daily`
 
-Colonnes
-* __Horaire__ : `id`, `time_text`, `time_ts`, `latitude`, `longitude`, `timezone`, `timezone_abbreviation`, `temperature_2m`, `relative_humidity_2m`, `apparent_temperature`, `precipitation`, `surface_pressure`, `cloud_cover`, `wind_speed_10m`
-* __Quotidien__ : `id`, `date_text`, `date_ts`, `latitude`, `longitude`, `timezone`, `timezone_abbreviation`, `sunrise_time`, `sunset_time`, `sunshine_duration`, `sunshine_duration_time`
+Schémas selon `spark_stream.py`:
+* __meteo_hourly__: `id`(STRING, REQUIRED), `time_text`(STRING), `time_ts`(TIMESTAMP), `latitude`(FLOAT64), `longitude`(FLOAT64), `timezone`(STRING), `timezone_abbreviation`(STRING), `temperature_2m`(FLOAT64), `relative_humidity_2m`(FLOAT64), `apparent_temperature`(FLOAT64), `precipitation`(FLOAT64), `surface_pressure`(FLOAT64), `cloud_cover`(FLOAT64), `wind_speed_10m`(FLOAT64)
+* __meteo_daily__: `id`(STRING, REQUIRED), `date_text`(STRING), `date_ts`(DATE), `latitude`(FLOAT64), `longitude`(FLOAT64), `timezone`(STRING), `timezone_abbreviation`(STRING), `sunrise_time`(STRING), `sunset_time`(STRING), `sunshine_duration`(FLOAT64), `sunshine_duration_time`(STRING)
 
-Remarque : le suffixe de date est fixé au démarrage du job. Dites‑moi si vous souhaitez une rotation à minuit ou un routage par temps d’événement.
 
 ## Démarrage rapide
-1) Démarrer tous les services
+1) Préparer les credentials BigQuery (placer `config/config.json`).
+2) Lancer les services:
 ```bash
 docker compose up -d
 ```
+3) Ouvrir Airflow UI: http://localhost:8080
+   * Déclencher le DAG producteur: `weather_daily` (planification `@daily`)
+   * Déclencher le DAG consommateur: `spark_stream_dag` (planification `@daily`)
 
-2) Déclencher le DAG producteur
-- UI Airflow → DAGs → `weather_daily` → Trigger
-
-3) Lancer le consommateur de streaming
-- UI Airflow → DAGs → `spark_stream_dag` → Trigger (planifié toutes les heures)
-- Alternative dev (hôte) : `python3 spark_stream.py`
-
-## Postgres — commandes rapides
-* __Ouvrir psql__
+4) Option dev en local (hors Airflow) depuis l’hôte:
 ```bash
-docker exec -it postgres psql -U airflow -d airflow
+python3 spark_stream.py
 ```
 
-* __Lister les tables du jour__
-```bash
-docker exec -i postgres psql -U airflow -d airflow -c "\dt meteo_*"
-```
-
-* __Décrire les tables du jour__
-```bash
-docker exec -i postgres psql -U airflow -d airflow -c "\d+ meteo_hourly_$(date +%Y%m%d)"
-docker exec -i postgres psql -U airflow -d airflow -c "\d+ meteo_daily_$(date +%Y%m%d)"
-```
-
-* __Exemple de requête__
-```bash
-docker exec -i postgres psql -U airflow -d airflow -c "SELECT * FROM meteo_hourly_$(date +%Y%m%d) ORDER BY time_ts DESC LIMIT 10;"
-```
-
-## Kafka — notes rapides
-* __Control Center__ : http://localhost:9021
-* __Produire depuis l’hôte__ : bootstrap `localhost:9092`
-* __Produire dans les conteneurs__ : bootstrap `broker:29092`
-
-## Superset
-* URL : http://localhost:8088
-* Ajouter une base : Postgres sur `postgres:5432` (depuis le conteneur), user/pass `airflow/airflow`
-* Explorer les tables : `meteo_hourly_YYYYMMDD`, `meteo_daily_YYYYMMDD`
-
-## Dépannage
-* __Nom de conteneur introuvable avec docker exec__
-  - `docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"`
-* __Spark n’atteint pas Kafka__
-  - Utiliser `broker:29092` quand le consommateur tourne dans un conteneur
-* __Tables manquantes__
-  - Consulter les logs de `spark_stream_dag` ; `ensure_pg_tables()` s’exécute au démarrage du job
+## Outils & URLs
+* __Kafka Control Center__: http://localhost:9021
+* __Spark Master UI__: http://localhost:9090
+* __Airflow Web UI__: http://localhost:8080
+* __BigQuery__: https://console.cloud.google.com/bigquery 
 
 ## Organisation du code
-* __DAGs__ : `dags/`
-* __Job de streaming__ : `spark_stream.py`
-* __Entrée Airflow__ : `script/entrypoint.sh`
-* __Dépendances Python__ : `requirements.txt`
+* __DAGs__: `dags/`
+* __Job Spark Streaming__: `spark_stream.py`
+* __Entrypoint Airflow__: `script/entrypoint.sh`
+* __Dépendances Python__: `requirements.txt`

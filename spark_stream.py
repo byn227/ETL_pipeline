@@ -267,6 +267,8 @@ if __name__ == "__main__":
                     .foreachBatch(lambda bdf, bid: write_batch_to_bq(bdf, bid, "daily")) \
                     .start()
                 queries.append(q2)
-
+            timeout_ms = 2 * 60 * 1000
             for q in queries:
-                q.awaitTermination()
+                q.awaitTermination(timeout=timeout_ms)
+                q.stop()
+            spark.stop()
