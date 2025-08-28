@@ -18,12 +18,11 @@ Produits par `dags/kafka_stream.py` (appel API Open‑Meteo, normalisation et en
 * __Bootstrap Kafka__:
   * Dans les conteneurs: `broker:29092`
   * Depuis l’hôte: `localhost:9092`
-* __Checkpoints__ (exemple d’exécution): `/tmp/checkpoints/hourly_<run_tag>`, `/tmp/checkpoints/daily_<run_tag>`
 
 ## BigQuery
-* __Project ID__: `leafy-mender-467715-s9` (modifiable dans `spark_stream.py`)
-* __Dataset__: `meteo_pazi`
-* __Tables__ (sans suffixe de date):
+* __Project ID__: `VOTRE_PROJECT_ID` (modifiable dans `spark_stream.py`)
+* __Dataset__: `meteo_pazi` 
+* __Tables__:
   * Horaire: `meteo_hourly`
   * Quotidien: `meteo_daily`
 
@@ -58,3 +57,5 @@ python3 spark_stream.py
 * __Job Spark Streaming__: `spark_stream.py`
 * __Entrypoint Airflow__: `script/entrypoint.sh`
 * __Dépendances Python__: `requirements.txt`
+
+## Visualisation par Looker Studio

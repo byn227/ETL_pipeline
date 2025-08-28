@@ -4,7 +4,7 @@ from airflow.operators.python import PythonOperator
 import uuid 
 default_args = {
     'owner': 'byn227',
-    'start_date': datetime(2025, 8, 24, 0, 0, 0)
+    'start_date': datetime(2025, 8, 28, 0, 0, 0)
 }
 
 def get_data():
