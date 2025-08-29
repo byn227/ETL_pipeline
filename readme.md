@@ -1,9 +1,8 @@
 # Pipeline ETL Météo Paris
 
-Flux Open‑Meteo vers Kafka, traitement avec Spark Structured Streaming, chargement dans BigQuery et visualisation via Looker Studio/BigQuery. Orchestration par Airflow.
+Flux Open‑Meteo vers Kafka, traitement avec Spark Structured Streaming, chargement dans BigQuery et visualisation via Looker Studio. Orchestration par Airflow.
 
-Vous pouvez changer la ville selon la latitude et la longitude dans l’API
-
+Vous pouvez changer la ville selon la latitude et la longitude dans l’API. Le ville actuel est Paris.
 ## Architecture
 ![System Architecture](assets/system.png)
 
@@ -63,3 +62,6 @@ python3 spark_stream.py
 Le rapport se met automatiquement à jour chaque jour.
 
 ![alt text](assets/report.png)
+
+## Commentaire
+C’est un pipeline ETL de type streaming, mais j’ai choisi de le mettre en batch en raison des caractéristiques des données. En effet, l’API Open-Meteo envoie des données une fois par jour. Ainsi, il n’est pas nécessaire d’utiliser Kafka, mais je souhaite l’employer dans un but d’apprentissage et bien comprendre le fonctionnement.
