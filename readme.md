@@ -12,6 +12,7 @@ Vous pouvez changer la ville selon la latitude et la longitude dans l’API
 * __Quotidien__: `daily_paris`
 
 Produits par `dags/kafka_stream.py` (appel API Open‑Meteo, normalisation et envoi vers Kafka).
+
 ## Consommateur Spark Streaming
 * __Entrée__: `spark_stream.py`
 * __Déclenché par__: `dags/spark_stream_dag.py` (planification: `@daily`)
@@ -21,7 +22,7 @@ Produits par `dags/kafka_stream.py` (appel API Open‑Meteo, normalisation et en
 
 ## BigQuery
 * __Project ID__: `VOTRE_PROJECT_ID` (modifiable dans `spark_stream.py`)
-* __Dataset__: `meteo_pazi` 
+* __Dataset__: `VOTRE_NOM_DATASET` (modifiable dans `spark_stream.py`)
 * __Tables__:
   * Horaire: `meteo_hourly`
   * Quotidien: `meteo_daily`
@@ -59,3 +60,6 @@ python3 spark_stream.py
 * __Dépendances Python__: `requirements.txt`
 
 ## Visualisation par Looker Studio
+Le rapport se met automatiquement à jour chaque jour.
+
+![alt text](assets/report.png)

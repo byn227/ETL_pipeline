@@ -10,13 +10,7 @@ PROJECT_ID = "leafy-mender-467715-s9"
 DATASET_NAME = "meteo_pazi"
 
 def resolve_credentials_path():
-    env = os.getenv("GCP_CREDENTIALS_FILE") or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-    candidates = [env] if env else []
-    candidates += ["./config/config.json", "/opt/app/config/config.json", "/config/config.json"]
-    for p in candidates:
-        if p and os.path.isfile(p):
-            return p
-    raise FileNotFoundError(f"No GCP credentials file found. Checked: {', '.join(candidates)}")
+    return os.getenv("GCP_CREDENTIALS_FILE")
 
 def get_bigquery_client():
     try:
@@ -267,8 +261,22 @@ if __name__ == "__main__":
                     .foreachBatch(lambda bdf, bid: write_batch_to_bq(bdf, bid, "daily")) \
                     .start()
                 queries.append(q2)
-            timeout_ms = 2 * 60 * 1000
-            for q in queries:
-                q.awaitTermination(timeout=timeout_ms)
-                q.stop()
-            spark.stop()
+            timeout_ms = 5 * 60 * 1000
+
+            try:
+                # Wait for any stream to terminate or timeout
+                finished = spark.streams.awaitAnyTermination(timeout_ms / 1000)  # Convert to seconds
+                if not finished:
+                    print("Timeout reached, stopping all queries...")
+                    for q in queries:
+                        q.stop()
+            except KeyboardInterrupt:
+                print("Interrupted, stopping all queries...")
+                for q in queries:
+                    q.stop()
+            finally:
+                # Give queries a moment to clean up
+                import time
+                time.sleep(2)
+                spark.stop()
+
