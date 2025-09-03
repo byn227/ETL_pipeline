@@ -13,7 +13,9 @@
 ![Spark](https://img.shields.io/badge/Apache%20Spark-3.5.x-e67e22?logo=apachespark&logoColor=cyan)
 ![Bitnami](https://img.shields.io/badge/Bitnami-Spark%20Image-34495e?logo=bitnami&logoColor=orange)
 ![BigQuery](https://img.shields.io/badge/BigQuery-GCP-9b59b6?logo=googlebigquery&logoColor=yellow)
-
+![NumPy](https://img.shields.io/badge/numpy-1.26.0-2ecc71?logo=numpy&logoColor=white)
+![Pandas](https://img.shields.io/badge/pandas-2.1.4-1abc9c?logo=pandas&logoColor=black)
+![PyArrow](https://img.shields.io/badge/pyarrow-21.0.0-e67e22?logo=apachearrow&logoColor=white)
 
 Flux Open‑Meteo vers Kafka, traitement avec Spark Structured Streaming, chargement dans BigQuery et visualisation via Looker Studio. Orchestration par Airflow.
 
