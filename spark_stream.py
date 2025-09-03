@@ -119,7 +119,7 @@ def create_spark_connection():
 def connect_to_kafka_topic(spark, topic):
     try:
         return (spark.readStream.format("kafka")
-            .option("kafka.bootstrap.servers", "localhost:9092")
+            .option("kafka.bootstrap.servers", "broker:29092")
             .option("subscribe", topic)
             .option("startingOffsets", "latest")
             .option("failOnDataLoss", "false")
@@ -261,22 +261,6 @@ if __name__ == "__main__":
                     .foreachBatch(lambda bdf, bid: write_batch_to_bq(bdf, bid, "daily")) \
                     .start()
                 queries.append(q2)
-            timeout_ms = 5 * 60 * 1000
-
-            try:
-                # Wait for any stream to terminate or timeout
-                finished = spark.streams.awaitAnyTermination(timeout_ms / 1000)  # Convert to seconds
-                if not finished:
-                    print("Timeout reached, stopping all queries...")
-                    for q in queries:
-                        q.stop()
-            except KeyboardInterrupt:
-                print("Interrupted, stopping all queries...")
-                for q in queries:
-                    q.stop()
-            finally:
-                # Give queries a moment to clean up
-                import time
-                time.sleep(2)
-                spark.stop()
+            for q in queries:
+                q.awaitTermination()
 

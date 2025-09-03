@@ -14,7 +14,7 @@ Produits par `dags/kafka_stream.py` (appel API Open‑Meteo, normalisation et en
 
 ## Consommateur Spark Streaming
 * __Entrée__: `spark_stream.py`
-* __Déclenché par__: `dags/spark_stream_dag.py` (planification: `@daily`)
+* __Déclenché par__: `dags/spark_stream_dag.py` (planificatgion: `@daily`)
 * __Bootstrap Kafka__:
   * Dans les conteneurs: `broker:29092`
   * Depuis l’hôte: `localhost:9092`
@@ -59,9 +59,13 @@ python3 spark_stream.py
 * __Dépendances Python__: `requirements.txt`
 
 ## Visualisation par Looker Studio
-Le rapport se met automatiquement à jour chaque jour.
+Le rapport se met automatiquement à jour chaque jour. 
 
 ![alt text](assets/report.png)
+
+J’ai filtré les données à la date d’aujourd’hui.
+
+![alt text](asset/filtre.png) 
 
 ## Commentaire
 C’est un pipeline ETL de type streaming, mais j’ai choisi de le mettre en batch en raison des caractéristiques des données. En effet, l’API Open-Meteo envoie des données une fois par jour. Ainsi, il n’est pas nécessaire d’utiliser Kafka, mais je souhaite l’employer dans un but d’apprentissage et bien comprendre le fonctionnement.

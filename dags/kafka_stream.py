@@ -112,7 +112,7 @@ def stream_data():
 with DAG(
     dag_id='weather_daily',
     default_args=default_args,
-    schedule="1 0 * * *",
+    schedule="@daily",
     catchup=False
 ) as dag:
 

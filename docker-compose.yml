@@ -213,8 +213,9 @@ services:
     container_name: bigquery_streaming_app
     command: >
       bash -c "
-      pip install google-cloud-bigquery numpy==1.24.3 pandas==2.0.3 pyarrow==12.0.1 &&
-      python /opt/app/spark_stream.py
+      pip install google-cloud-bigquery numpy==1.26.0 pandas==2.1.4 pyarrow &&
+      python3 /opt/app/spark_stream.py
+
       "
     depends_on:
       broker:
@@ -224,7 +225,7 @@ services:
     environment:
       SPARK_MODE: client
       SPARK_MASTER_URL: spark://spark-master:7077
-      GOOGLE_APPLICATION_CREDENTIALS: /opt/app/config/config.json
+      GCP_CREDENTIALS_FILE: /opt/app/config/config.json
     networks:
       - confluent
     volumes:
