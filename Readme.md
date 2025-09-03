@@ -10,12 +10,14 @@
 ![Control Center](https://img.shields.io/badge/Control%20Center-7.4.0-2c3e50?logo=confluent&logoColor=lime)
 ![Airflow](https://img.shields.io/badge/Airflow-2.8.2-1abc9c?logo=apacheairflow&logoColor=red)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.0-3498db?logo=postgresql&logoColor=gold)
-![Spark](https://img.shields.io/badge/Apache%20Spark-3.5.x-e67e22?logo=apachespark&logoColor=cyan)
+![Spark](https://img.shields.io/badge/Apache%20Spark-3.5.1-e67e22?logo=apachespark&logoColor=cyan)
 ![Bitnami](https://img.shields.io/badge/Bitnami-Spark%20Image-34495e?logo=bitnami&logoColor=orange)
 ![BigQuery](https://img.shields.io/badge/BigQuery-GCP-9b59b6?logo=googlebigquery&logoColor=yellow)
 ![NumPy](https://img.shields.io/badge/numpy-1.26.0-2ecc71?logo=numpy&logoColor=white)
 ![Pandas](https://img.shields.io/badge/pandas-2.1.4-1abc9c?logo=pandas&logoColor=black)
 ![PyArrow](https://img.shields.io/badge/pyarrow-21.0.0-e67e22?logo=apachearrow&logoColor=white)
+![Maven Central](https://img.shields.io/maven-central/v/org.apache.spark/spark-sql-kafka-0-10_2.13.svg?label=spark-sql-kafka)
+
 
 Flux Open‑Meteo vers Kafka, traitement avec Spark Structured Streaming, chargement dans BigQuery et visualisation via Looker Studio. Orchestration par Airflow.
 
