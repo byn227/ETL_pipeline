@@ -58,10 +58,6 @@ docker compose up -d
 3) Ouvrir Airflow UI: http://localhost:8080
    * Déclencher le DAG producteur: `weather_daily` (planification `@daily`)
 
-4) Option dev en local (hors Airflow) depuis l’hôte:
-```bash
-python3 spark_stream.py
-```
 
 ## Outils & URLs
 * __Kafka Control Center__: http://localhost:9021
