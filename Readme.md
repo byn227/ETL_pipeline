@@ -33,7 +33,6 @@ Produits par `dags/kafka_stream.py` (appel API Open‑Meteo, normalisation et en
 
 ## Consommateur Spark Streaming
 * __Entrée__: `spark_stream.py`
-* __Déclenché par__: `dags/spark_stream_dag.py` (planificatgion: `@daily`)
 * __Bootstrap Kafka__:
   * Dans les conteneurs: `broker:29092`
   * Depuis l’hôte: `localhost:9092`
@@ -58,7 +57,6 @@ docker compose up -d
 ```
 3) Ouvrir Airflow UI: http://localhost:8080
    * Déclencher le DAG producteur: `weather_daily` (planification `@daily`)
-   * Déclencher le DAG consommateur: `spark_stream_dag` (planification `@daily`)
 
 4) Option dev en local (hors Airflow) depuis l’hôte:
 ```bash
