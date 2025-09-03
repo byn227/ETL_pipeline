@@ -84,7 +84,7 @@ Le rapport se met automatiquement à jour chaque jour.
 
 J’ai filtré les données à la date d’aujourd’hui.
 
-![alt text](asset/filtre.png) 
+![alt text](assets/filtre.png) 
 
 ## Commentaire
 C’est un pipeline ETL de type streaming, mais j’ai choisi de le mettre en batch en raison des caractéristiques des données. En effet, l’API Open-Meteo envoie des données une fois par jour. Ainsi, il n’est pas nécessaire d’utiliser Kafka, mais je souhaite l’employer dans un but d’apprentissage et bien comprendre le fonctionnement.
