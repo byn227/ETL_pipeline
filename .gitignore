@@ -3,3 +3,4 @@ artifacts/
 postgres/
 dags/__pycache__
 config/
+.env
